@@ -3,7 +3,7 @@
 Plugin Name: Disable Email
 Plugin URI: https://www.littlebizzy.com/plugins/disable-email
 Description: Completely disables email sending
-Version: 1.2.0
+Version: 1.0.0
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
@@ -23,7 +23,7 @@ add_filter( 'gu_override_dot_org', function( $overrides ) {
     return $overrides;
 });
 
-// Disable all email sending in WordPress
+// Disable all email sending in WordPress Core
 add_filter( 'wp_mail', function( $args ) {
     return false; // Disable all emails
 });
@@ -63,8 +63,16 @@ add_filter( 'admin_email_check_interval', '__return_false' );
 // Disable site health-related email notifications
 add_filter( 'wp_site_health_scheduled_check_email', '__return_false' );
 
-// Disable user role or capability change notifications (if any)
+// Disable user role or capability change notifications
 add_action( 'set_user_role', function( $user_id, $role, $old_roles ) {}, 10, 3 );
+
+// Disable email logging from logging plugins (like WP Mail Logging)
+add_action( 'wp_mail', function( $args ) {
+    if ( class_exists( 'WPML_Logging' ) ) {
+        remove_all_filters( 'wp_mail' );
+    }
+    return $args;
+});
 
 // Disable WooCommerce transactional emails
 if ( class_exists( 'WooCommerce' ) ) {
@@ -97,7 +105,19 @@ if ( class_exists( 'bbPress' ) ) {
     add_filter( 'bbp_reply_subscription_mail_headers', '__return_empty_string' );
 }
 
+// Disable REST API email notifications (for password reset, user updates, etc.)
+add_filter( 'rest_password_reset_mail', '__return_false' );
+add_filter( 'rest_new_user_notification', '__return_false' );
+
+// Disable email notifications for admin email changes or profile updates
+remove_action( 'profile_update', 'wp_send_user_request_notification' );
+remove_action( 'profile_update', 'send_email_change_email' );
+remove_action( 'profile_update', 'send_password_change_email' );
+
 // Disable email notifications for new posts
 remove_action( 'publish_post', 'wp_notify_postauthor' );
+
+// Disable custom SMTP email setups that might bypass wp_mail
+remove_action( 'phpmailer_init', 'wp_mail_smtp_init_smtp' );
 
 // Ref: ChatGPT
