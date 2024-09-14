@@ -3,7 +3,7 @@
 Plugin Name: Disable Email
 Plugin URI: https://www.littlebizzy.com/plugins/disable-email
 Description: Completely disables email sending
-Version: 1.0.0
+Version: 1.2.0
 Author: LittleBizzy
 Author URI: https://www.littlebizzy.com
 License: GPLv3
@@ -36,21 +36,68 @@ add_action( 'phpmailer_init', function( $phpmailer ) {
     $phpmailer->ClearReplyTos();
     $phpmailer->Subject = '';
     $phpmailer->Body = '';
-    return $phpmailer; // Ensure the mailer is effectively blocked
+    return $phpmailer;
 });
 
-// Disable email notifications for password resets
+// Disable password reset emails
 add_filter( 'retrieve_password_message', '__return_empty_string' );
 add_filter( 'retrieve_password_title', '__return_empty_string' );
 
-// Disable email notifications for new user registrations
+// Disable new user registration emails
 add_filter( 'wp_new_user_notification_email', '__return_false' );
 
-// Disable plugin and core update email notifications
+// Disable all update-related email notifications
 add_filter( 'auto_core_update_send_email', '__return_false' );
 add_filter( 'send_core_update_notification_email', '__return_false' );
 add_filter( 'automatic_updates_send_debug_email', '__return_false', 1 );
 add_filter( 'auto_plugin_update_send_email', '__return_false', 1 );
 add_filter( 'auto_theme_update_send_email', '__return_false', 1 );
+
+// Disable comment moderation and notification emails
+add_filter( 'comment_moderation_recipients', '__return_empty_array' );
+add_filter( 'comment_notification_recipients', '__return_empty_array' );
+
+// Disable admin email change confirmation
+add_filter( 'admin_email_check_interval', '__return_false' );
+
+// Disable site health-related email notifications
+add_filter( 'wp_site_health_scheduled_check_email', '__return_false' );
+
+// Disable user role or capability change notifications (if any)
+add_action( 'set_user_role', function( $user_id, $role, $old_roles ) {}, 10, 3 );
+
+// Disable WooCommerce transactional emails
+if ( class_exists( 'WooCommerce' ) ) {
+    add_filter( 'woocommerce_email_enabled_new_order', '__return_false' );
+    add_filter( 'woocommerce_email_enabled_cancelled_order', '__return_false' );
+    add_filter( 'woocommerce_email_enabled_failed_order', '__return_false' );
+    add_filter( 'woocommerce_email_enabled_customer_on_hold_order', '__return_false' );
+    add_filter( 'woocommerce_email_enabled_customer_processing_order', '__return_false' );
+    add_filter( 'woocommerce_email_enabled_customer_completed_order', '__return_false' );
+    add_filter( 'woocommerce_email_enabled_customer_refunded_order', '__return_false' );
+    add_filter( 'woocommerce_email_enabled_customer_invoice', '__return_false' );
+    add_filter( 'woocommerce_email_enabled_low_stock', '__return_false' );
+    add_filter( 'woocommerce_email_enabled_no_stock', '__return_false' );
+    add_filter( 'woocommerce_email_enabled_backorder', '__return_false' );
+    add_filter( 'woocommerce_email_enabled_customer_note', '__return_false' );
+}
+
+// Disable bbPress email notifications
+if ( class_exists( 'bbPress' ) ) {
+    // Disable bbPress new reply and new topic notifications
+    add_filter( 'bbp_subscription_mail_message', '__return_empty_string' );
+    add_filter( 'bbp_forum_subscription_mail_message', '__return_empty_string' );
+    add_filter( 'bbp_topic_subscription_mail_message', '__return_empty_string' );
+    add_filter( 'bbp_reply_subscription_mail_message', '__return_empty_string' );
+    
+    // Disable bbPress email headers
+    add_filter( 'bbp_subscription_mail_headers', '__return_empty_string' );
+    add_filter( 'bbp_forum_subscription_mail_headers', '__return_empty_string' );
+    add_filter( 'bbp_topic_subscription_mail_headers', '__return_empty_string' );
+    add_filter( 'bbp_reply_subscription_mail_headers', '__return_empty_string' );
+}
+
+// Disable email notifications for new posts
+remove_action( 'publish_post', 'wp_notify_postauthor' );
 
 // Ref: ChatGPT
