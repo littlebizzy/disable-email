@@ -50,8 +50,8 @@ add_filter( 'wp_new_user_notification_email', '__return_false' );
 add_filter( 'auto_core_update_send_email', '__return_false' );
 add_filter( 'send_core_update_notification_email', '__return_false' );
 add_filter( 'automatic_updates_send_debug_email', '__return_false', 1 );
-add_filter( 'auto_plugin_update_send_email', '__return_false', 1 );
-add_filter( 'auto_theme_update_send_email', '__return_false', 1 );
+add_filter( 'auto_plugin_update_send_email', '__return_false' );
+add_filter( 'auto_theme_update_send_email', '__return_false' );
 
 // Disable comment moderation and notification emails
 add_filter( 'comment_moderation_recipients', '__return_empty_array' );
@@ -149,9 +149,6 @@ if ( function_exists( 'wp_die' ) ) {
     remove_action( 'shutdown', 'wp_send_error_email', 10 );
 }
 
-// Disable email notifications for new posts
-remove_action( 'publish_post', 'wp_notify_postauthor' );
-
 // Multisite: Disable network-wide email notifications (if multisite)
 if ( is_multisite() ) {
     add_filter( 'network_site_users_notification', '__return_false' );
@@ -164,5 +161,16 @@ if ( is_multisite() ) {
 add_action( 'init', function() {
     wp_deregister_script( 'heartbeat' );
 });
+
+// Block direct use of PHP mail() function
+if ( ! function_exists( 'wp_mail' ) ) {
+    function wp_mail( $to, $subject, $message, $headers = '', $attachments = array() ) {
+        return false;  // Overwrite PHP mail functions with no action
+    }
+}
+
+// Fallback: Block direct calls to PHP's mail() and sendmail commands
+ini_set( 'sendmail_path', '/bin/false' );  // Nullify sendmail command
+ini_set( 'SMTP', '' ); // Nullify SMTP setting to prevent emails
 
 // Ref: ChatGPT
