@@ -88,6 +88,11 @@ if ( class_exists( 'WooCommerce' ) ) {
     add_filter( 'woocommerce_email_enabled_no_stock', '__return_false' );
     add_filter( 'woocommerce_email_enabled_backorder', '__return_false' );
     add_filter( 'woocommerce_email_enabled_customer_note', '__return_false' );
+
+    // Block subscription-related emails for WooCommerce Subscriptions (if used)
+    add_filter( 'woocommerce_subscriptions_email_customer_renewal', '__return_false' );
+    add_filter( 'woocommerce_subscriptions_email_payment_retry', '__return_false' );
+    add_filter( 'woocommerce_subscriptions_email_renewal_order', '__return_false' );
 }
 
 // Disable bbPress email notifications
@@ -139,7 +144,25 @@ add_action( 'updated_post_meta', function( $meta_id, $post_id, $meta_key, $meta_
     }
 }, 10, 4 );
 
+// Disable error reporting via email (in case of critical failures)
+if ( function_exists( 'wp_die' ) ) {
+    remove_action( 'shutdown', 'wp_send_error_email', 10 );
+}
+
 // Disable email notifications for new posts
 remove_action( 'publish_post', 'wp_notify_postauthor' );
+
+// Multisite: Disable network-wide email notifications (if multisite)
+if ( is_multisite() ) {
+    add_filter( 'network_site_users_notification', '__return_false' );
+    add_filter( 'network_site_new_user_notification', '__return_false' );
+    add_filter( 'network_site_welcome_user_notification', '__return_false' );
+    add_filter( 'network_site_welcome_site_notification', '__return_false' );
+}
+
+// Optionally disable WordPress Heartbeat API to further reduce activity
+add_action( 'init', function() {
+    wp_deregister_script( 'heartbeat' );
+});
 
 // Ref: ChatGPT
