@@ -109,15 +109,37 @@ if ( class_exists( 'bbPress' ) ) {
 add_filter( 'rest_password_reset_mail', '__return_false' );
 add_filter( 'rest_new_user_notification', '__return_false' );
 
-// Disable email notifications for admin email changes or profile updates
-remove_action( 'profile_update', 'wp_send_user_request_notification' );
-remove_action( 'profile_update', 'send_email_change_email' );
-remove_action( 'profile_update', 'send_password_change_email' );
-
-// Disable email notifications for new posts
-remove_action( 'publish_post', 'wp_notify_postauthor' );
+// Disable XML-RPC email notifications
+add_filter( 'xmlrpc_enabled', '__return_false' );  // Disable XML-RPC entirely to avoid any email attempts
+add_action( 'xmlrpc_call', function() {
+    die( 'XML-RPC services are disabled' ); // Disable all XML-RPC services as a fallback
+});
 
 // Disable custom SMTP email setups that might bypass wp_mail
 remove_action( 'phpmailer_init', 'wp_mail_smtp_init_smtp' );
+
+// Disable wp_cron from triggering emails
+add_action( 'wp_cron', function() {
+    remove_action( 'wp_mail', 'send_email_via_wp_cron' );
+}, 1 );
+
+// Disable contact form emails (for basic core cases)
+remove_action( 'wp', 'wp_handle_contact_form_submission' ); // For basic email form handling, just in case
+
+// Ensure all user meta and post meta changes don't trigger emails
+add_action( 'updated_user_meta', function( $meta_id, $user_id, $meta_key, $meta_value ) {
+    if ( strpos( $meta_key, 'email' ) !== false ) {
+        return false;  // Block any meta changes that relate to emails
+    }
+}, 10, 4 );
+
+add_action( 'updated_post_meta', function( $meta_id, $post_id, $meta_key, $meta_value ) {
+    if ( strpos( $meta_key, 'email' ) !== false ) {
+        return false;  // Block post meta changes that might trigger emails
+    }
+}, 10, 4 );
+
+// Disable email notifications for new posts
+remove_action( 'publish_post', 'wp_notify_postauthor' );
 
 // Ref: ChatGPT
